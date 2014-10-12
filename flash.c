@@ -10,7 +10,7 @@ static const unsigned char OFF = 0x00;
 
 int main(int argc, char *argv[]) {
     if (argc != 2 || (strcmp(argv[1], "on") != 0 && strcmp(argv[1], "off"))) {
-        printf("Usage: warning-light [on | off]\n");
+        fprintf(stderr, "Usage: warning-light [on | off]\n");
         return 1;
     }
 
@@ -22,12 +22,12 @@ int main(int argc, char *argv[]) {
     }
 
 
-    libusb_device_handle *devh;
-    devh = libusb_open_device_with_vid_pid(NULL, 0x0fc5, 0xb080);
+    libusb_device_handle *devh = libusb_open_device_with_vid_pid(NULL, 0x0fc5, 0xb080);
 
     if (devh != NULL) {
         libusb_detach_kernel_driver(devh, INTERFACE_NUMBER);
         r = libusb_claim_interface(devh, INTERFACE_NUMBER);
+
 
         if (r >= 0) {
             unsigned char command = strcmp("on", argv[1]) == 0 ? RED : OFF;
@@ -43,8 +43,17 @@ int main(int argc, char *argv[]) {
                 0x00  // HID, fourth byte
             };
 
-            // TODO: Hva i alle dager betyr de magiske verdiene..?
-            libusb_control_transfer(devh, 0x21, 0x09, 0x0635, 0x000, buffer, sizeof(buffer), 0);
+            libusb_control_transfer (
+                devh,
+                0x21, // bmRequestType (host to device)
+                0x09, // bRequest (set configuration)
+                0x0635, // wValue (configuration value)
+                0x000, // wIndex
+                buffer, // Data / message
+                sizeof(buffer), // wLength, Number of bytes to be sent
+                0 // Timeout
+            );
+
             libusb_release_interface(devh, 0);
         } else {
             fprintf(stderr, "libusb_claim_interface error %d\n", r);
