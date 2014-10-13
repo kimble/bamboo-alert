@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in `seq 1 5`;
+for i in `seq 1 $1`;
 do
     out/flash on
     sleep 0.2
