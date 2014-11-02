@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "libusb.h"
 
 
@@ -15,14 +14,15 @@ int main(int argc, char *argv[]) {
     }
 
     int r;
+    libusb_context *ctx;
 
-    r = libusb_init(NULL);
+    r = libusb_init(&ctx);
     if (r < 0) {
         return r;
     }
 
-
-    libusb_device_handle *devh = libusb_open_device_with_vid_pid(NULL, 0x0fc5, 0xb080);
+    libusb_set_debug(ctx, 1); // error messages are printed to stderr
+    libusb_device_handle *devh = libusb_open_device_with_vid_pid(ctx, 0x0fc5, 0xb080);
 
     if (devh != NULL) {
         libusb_detach_kernel_driver(devh, INTERFACE_NUMBER);
@@ -43,14 +43,15 @@ int main(int argc, char *argv[]) {
                 0x00  // HID, fourth byte
             };
 
+            /* http://www.usb.org/developers/hidpage/HID1_11.pdf page 50 */
             libusb_control_transfer (
                 devh,
-                0x21, // bmRequestType (host to device)
-                0x09, // bRequest (set configuration)
-                0x0635, // wValue (configuration value)
-                0x000, // wIndex
+                0x21, // bmRequestType (host to device, type: class, recipient: interface)
+                0x09, // bRequest (SET_REPORT - allows the host to send a report to the device, possibly setting the state of input, output, or feature controls)
+                0x0635, // wValue (Report Type / ID - Specific to the device)
+                0x000, // wIndex (interface)
                 buffer, // Data / message
-                sizeof(buffer), // wLength, Number of bytes to be sent
+                sizeof(buffer), // wLength (report length)
                 0 // Timeout
             );
 
@@ -64,6 +65,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "No device\n");
     }
 
-    libusb_exit(NULL);
+    libusb_exit(ctx);
     return 0;
 }
